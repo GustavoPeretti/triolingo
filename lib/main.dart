@@ -596,7 +596,12 @@ class Configuracoes extends StatelessWidget {
             height: 16,
           ),
           ListTile(
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage())
+              );
+            },
             tileColor: const Color.fromARGB(255, 255, 251, 183),
             title: const Text(
               'Alterar língua de preferência',
