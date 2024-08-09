@@ -1,12 +1,19 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-
 import 'package:triolingo/database/dao/palavradao.dart';
+
+import 'package:triolingo/database/dao/preferenciadao.dart';
 import 'package:triolingo/database/dao/traducaodao.dart';
+import 'package:triolingo/model/traducao.dart';
+
+late Traducao traducao;
+late List<Map<String, Object?>> dicionario;
 
 void main() async {
   if (Platform.isWindows || Platform.isLinux) {
@@ -16,9 +23,13 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
+  if ((await buscarLingua()).isNotEmpty) {
+    traducao = Traducao.fromMap((await buscarTraducao((await buscarLingua()).first.values.first.toString())).first);
+  }
+
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: const HomePage(),
+    home: (await buscarLingua()).isEmpty ? const HomePage() : const Preferencia(),
     theme: ThemeData(useMaterial3: true, fontFamily: 'Dosis'),
   ));
 }
@@ -97,7 +108,9 @@ class HomePage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    alterarLingua('portugues');
+                    traducao = Traducao.fromMap((await buscarTraducao('portugues')).first);
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -126,7 +139,9 @@ class HomePage extends StatelessWidget {
                   height: 16,
                 ),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    alterarLingua('ingles');
+                    traducao = Traducao.fromMap((await buscarTraducao('ingles')).first);
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -155,7 +170,9 @@ class HomePage extends StatelessWidget {
                   height: 16,
                 ),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    alterarLingua('latim');
+                    traducao = Traducao.fromMap((await buscarTraducao('latim')).first);
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -204,9 +221,9 @@ class Preferencia extends StatelessWidget {
               'assets/img/gatito.gif',
               height: 250,
             ),
-            const Text(
-              'Quero aprimorar meu vocabulário em:',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
+            Text(
+              traducao.desejoAprimorar,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
               textAlign: TextAlign.center,
             ),
             const SizedBox(
@@ -215,7 +232,8 @@ class Preferencia extends StatelessWidget {
             Column(
               children: [
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    dicionario = await buscarPares(traducao.lingua, 'portugues');
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -224,15 +242,15 @@ class Preferencia extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     color: const Color.fromARGB(255, 91, 124, 141),
-                    child: const ListTile(
-                      leading: CircleAvatar(
+                    child: ListTile(
+                      leading: const CircleAvatar(
                         radius: 32,
                         backgroundImage:
                             AssetImage('assets/img/brasil-bandeira.jpg'),
                       ),
                       title: Text(
-                        'Português',
-                        style: TextStyle(
+                        traducao.portugues,
+                        style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 18),
@@ -244,7 +262,8 @@ class Preferencia extends StatelessWidget {
                   height: 16,
                 ),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    dicionario = await buscarPares(traducao.lingua, 'ingles');
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -253,15 +272,15 @@ class Preferencia extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     color: const Color.fromARGB(255, 91, 124, 141),
-                    child: const ListTile(
-                      leading: CircleAvatar(
+                    child: ListTile(
+                      leading: const CircleAvatar(
                         radius: 32,
                         backgroundImage:
                             AssetImage('assets/img/eua-bandeira.jpg'),
                       ),
                       title: Text(
-                        'Inglês',
-                        style: TextStyle(
+                        traducao.ingles,
+                        style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 18),
@@ -273,7 +292,8 @@ class Preferencia extends StatelessWidget {
                   height: 16,
                 ),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    dicionario = await buscarPares(traducao.lingua, 'latim');
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -282,15 +302,15 @@ class Preferencia extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     color: const Color.fromARGB(255, 91, 124, 141),
-                    child: const ListTile(
-                      leading: CircleAvatar(
+                    child: ListTile(
+                      leading: const CircleAvatar(
                         radius: 32,
                         backgroundImage: AssetImage(
                             'assets/img/sacro-imperio-romano-bandeira.jpg'),
                       ),
                       title: Text(
-                        'Latim',
-                        style: TextStyle(
+                        traducao.latim,
+                        style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 18),
@@ -394,9 +414,9 @@ class Dashboard extends StatelessWidget {
                         height: 150,
                         color: const Color.fromARGB(255, 102, 182, 171),
                         padding: const EdgeInsets.all(4),
-                        child: const Column(
+                        child: Column(
                           children: [
-                            Text(
+                            const Text(
                               '10',
                               style: TextStyle(
                                   color: Colors.white,
@@ -404,8 +424,8 @@ class Dashboard extends StatelessWidget {
                                   fontWeight: FontWeight.w700),
                             ),
                             Text(
-                              'Palavras para revisar',
-                              style: TextStyle(
+                              traducao.paraRevisar,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                               ),
@@ -457,7 +477,7 @@ class Dashboard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         SizedBox(
-                            width: 100,
+                            width: 120,
                             child: TextButton(
                               onPressed: () {},
                               style: const ButtonStyle(
@@ -465,15 +485,15 @@ class Dashboard extends StatelessWidget {
                                       ContinuousRectangleBorder()),
                                   backgroundColor: MaterialStatePropertyAll(
                                       Color.fromARGB(255, 79, 29, 58))),
-                              child: const Text(
-                                'Conheço',
-                                style: TextStyle(
+                              child: Text(
+                                traducao.conheco,
+                                style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700),
                               ),
                             )),
                         SizedBox(
-                            width: 100,
+                            width: 120,
                             child: TextButton(
                               onPressed: () {},
                               style: const ButtonStyle(
@@ -481,9 +501,9 @@ class Dashboard extends StatelessWidget {
                                       ContinuousRectangleBorder()),
                                   backgroundColor: MaterialStatePropertyAll(
                                       Color.fromARGB(255, 79, 29, 58))),
-                              child: const Text(
-                                'Não conheço',
-                                style: TextStyle(
+                              child: Text(
+                                traducao.naoConheco,
+                                style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700),
                               ),
@@ -511,10 +531,10 @@ class Conhecidas extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          const Center(
+          Center(
               child: Text(
-            'Palavras conhecidas',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
+            traducao.palavrasConhecidas,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
           )),
           const SizedBox(
             height: 16,
@@ -549,10 +569,10 @@ class ParaRevisar extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          const Center(
+          Center(
               child: Text(
-            'Palavras para revisar',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
+            traducao.paraRevisar,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
           )),
           const SizedBox(
             height: 16,
@@ -587,10 +607,10 @@ class Configuracoes extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          const Center(
+          Center(
               child: Text(
-            'Configurações',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
+            traducao.configuracoes,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
           )),
           const SizedBox(
             height: 16,
@@ -599,13 +619,13 @@ class Configuracoes extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => HomePage())
+                MaterialPageRoute(builder: (context) => const HomePage())
               );
             },
             tileColor: const Color.fromARGB(255, 255, 251, 183),
-            title: const Text(
-              'Alterar língua de preferência',
-              style: TextStyle(fontWeight: FontWeight.w700),
+            title: Text(
+              traducao.alterarLingua,
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             subtitle: const Text(
                 'Atual: Português'),

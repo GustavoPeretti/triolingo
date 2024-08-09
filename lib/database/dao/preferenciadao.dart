@@ -4,9 +4,23 @@ import 'package:triolingo/database/db.dart';
 Future<int> alterarLingua(String lingua) async {
   Database db = await getDatabase();
 
-  if ((await db.query('preferencia')).isEmpty) {
-    return await db.insert('preferencia', {lingua: lingua}, conflictAlgorithm: ConflictAlgorithm.replace);
+  if ((await db.query('preferencias')).isEmpty) {
+    return await db.insert('preferencias', {'lingua': lingua}, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  return await db.update('preferencia', {lingua: lingua}, conflictAlgorithm: ConflictAlgorithm.replace);
+  return await db.update('preferencias', {'lingua': lingua}, conflictAlgorithm: ConflictAlgorithm.replace);
+}
+
+Future<List<Map<String, Object?>>> buscarLingua() async {
+  Database db = await getDatabase();
+
+  List<Map<String, Object?>> data = await db.query('preferencias');
+
+  return data;
+}
+
+Future<int> deletarLingua() async {
+  Database db = await getDatabase();
+
+  return db.delete('preferencias');
 }
