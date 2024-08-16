@@ -18,9 +18,3 @@ Future<List<Map<String, Object?>>> buscarLingua() async {
 
   return data;
 }
-
-Future<int> deletarLingua() async {
-  Database db = await getDatabase();
-
-  return db.delete('preferencias');
-}

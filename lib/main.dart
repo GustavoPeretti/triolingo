@@ -1,19 +1,26 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
+import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:triolingo/database/dao/palavradao.dart';
 
 import 'package:triolingo/database/dao/preferenciadao.dart';
 import 'package:triolingo/database/dao/traducaodao.dart';
+import 'package:triolingo/model/palavra.dart';
 import 'package:triolingo/model/traducao.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 late Traducao traducao;
-late List<Map<String, Object?>> dicionario;
+late String lingua;
+
+final random = Random();
 
 void main() async {
   if (Platform.isWindows || Platform.isLinux) {
@@ -24,12 +31,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if ((await buscarLingua()).isNotEmpty) {
-    traducao = Traducao.fromMap((await buscarTraducao((await buscarLingua()).first.values.first.toString())).first);
+    traducao = Traducao.fromMap((await buscarTraducao(
+            (await buscarLingua()).first.values.first.toString()))
+        .first);
   }
 
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: (await buscarLingua()).isEmpty ? const HomePage() : const Preferencia(),
+    home:
+        (await buscarLingua()).isEmpty ? const HomePage() : const Preferencia(),
     theme: ThemeData(useMaterial3: true, fontFamily: 'Dosis'),
   ));
 }
@@ -110,7 +120,8 @@ class HomePage extends StatelessWidget {
                 GestureDetector(
                   onTap: () async {
                     alterarLingua('portugues');
-                    traducao = Traducao.fromMap((await buscarTraducao('portugues')).first);
+                    traducao = Traducao.fromMap(
+                        (await buscarTraducao('portugues')).first);
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -141,7 +152,8 @@ class HomePage extends StatelessWidget {
                 GestureDetector(
                   onTap: () async {
                     alterarLingua('ingles');
-                    traducao = Traducao.fromMap((await buscarTraducao('ingles')).first);
+                    traducao = Traducao.fromMap(
+                        (await buscarTraducao('ingles')).first);
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -172,7 +184,8 @@ class HomePage extends StatelessWidget {
                 GestureDetector(
                   onTap: () async {
                     alterarLingua('latim');
-                    traducao = Traducao.fromMap((await buscarTraducao('latim')).first);
+                    traducao =
+                        Traducao.fromMap((await buscarTraducao('latim')).first);
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -233,7 +246,7 @@ class Preferencia extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    dicionario = await buscarPares(traducao.lingua, 'portugues');
+                    lingua = 'portugues';
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -263,7 +276,7 @@ class Preferencia extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: () async {
-                    dicionario = await buscarPares(traducao.lingua, 'ingles');
+                    lingua = 'ingles';
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -293,7 +306,7 @@ class Preferencia extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: () async {
-                    dicionario = await buscarPares(traducao.lingua, 'latim');
+                    lingua = 'latim';
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -327,9 +340,14 @@ class Preferencia extends StatelessWidget {
   }
 }
 
-class Dashboard extends StatelessWidget {
+class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     return ScaffoldPadrao(
@@ -338,14 +356,21 @@ class Dashboard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 32,
-            backgroundImage:
-                AssetImage('assets/img/sacro-imperio-romano-bandeira.jpg'),
+            backgroundImage: AssetImage({
+              'portugues': 'assets/img/brasil-bandeira.jpg',
+              'ingles': 'assets/img/eua-bandeira.jpg',
+              'latim': 'assets/img/sacro-imperio-romano-bandeira.jpg'
+            }[lingua]!),
           ),
-          const Text(
-            'Latim',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
+          Text(
+            {
+              'portugues': 'Português',
+              'ingles': 'Inglês',
+              'latim': 'Latim'
+            }[lingua]!,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32.0),
@@ -354,8 +379,10 @@ class Dashboard extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => const Conhecidas()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const Conhecidas()));
                 },
                 child: Center(
                   child: Column(
@@ -403,8 +430,10 @@ class Dashboard extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => const ParaRevisar()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ParaRevisar()));
                 },
                 child: Center(
                   child: Column(
@@ -441,79 +470,124 @@ class Dashboard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 32.0),
-          Container(
-            decoration: BoxDecoration(boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF000000).withOpacity(0.25),
-                blurRadius: 32,
-                spreadRadius: -8,
-              ),
-            ]),
-            child: Card(
-              margin: const EdgeInsets.symmetric(horizontal: 32),
-              shape: const ContinuousRectangleBorder(),
-              shadowColor: Colors.black,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Cogito',
-                      style:
-                          TextStyle(fontSize: 40, fontWeight: FontWeight.w700),
+          FutureBuilder(
+            future: sortearPalavra(lingua),
+            builder: (context, snapshot) {
+              switch (snapshot.connectionState) {
+                case ConnectionState.none:
+                  return const Center(
+                    child: Text(
+                        'Não foi possível ler os cadastros da base de dados.'),
+                  );
+                case ConnectionState.waiting:
+                  return const Center(child: CircularProgressIndicator());
+                case ConnectionState.active:
+                  return const Center(child: CircularProgressIndicator());
+                case ConnectionState.done:
+                  Palavra palavra = Palavra.fromMap(snapshot.data!.cast());
+                  return Container(
+                    decoration: BoxDecoration(boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF000000).withOpacity(0.25),
+                        blurRadius: 32,
+                        spreadRadius: -8,
+                      ),
+                    ]),
+                    child: Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 32),
+                      shape: const ContinuousRectangleBorder(),
+                      shadowColor: Colors.black,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              {
+                                'portugues': palavra.grafiaPortugues,
+                                'ingles': palavra.grafiaIngles,
+                                'latim': palavra.grafiaLatim
+                              }[lingua]!,
+                              style: const TextStyle(
+                                  fontSize: 40, fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(
+                              height: 32,
+                            ),
+                            SizedBox(
+                                width: 300,
+                                child: FutureBuilder(
+                                  future: buscarLingua(),
+                                  builder: (context, snapshot) => Text(
+                                    {
+                                      'portugues': palavra.significadoPortugues,
+                                      'ingles': palavra.significadoIngles,
+                                      'latim': palavra.significadoLatim
+                                    }[snapshot.data!.first.values.first
+                                        .toString()]!,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                )),
+                            const SizedBox(
+                              height: 32,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                SizedBox(
+                                    width: 120,
+                                    child: TextButton(
+                                      onPressed: () async {
+                                        cadastrarConhecida(
+                                            palavra.idPalavra,
+                                            (await buscarLingua())
+                                                .first
+                                                .values
+                                                .first
+                                                .toString(),
+                                            lingua);
+                                        setState(() {});
+                                      },
+                                      style: const ButtonStyle(
+                                          shape: MaterialStatePropertyAll(
+                                              ContinuousRectangleBorder()),
+                                          backgroundColor:
+                                              MaterialStatePropertyAll(
+                                                  Color.fromARGB(
+                                                      255, 79, 29, 58))),
+                                      child: Text(
+                                        traducao.conheco,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700),
+                                      ),
+                                    )),
+                                SizedBox(
+                                    width: 120,
+                                    child: TextButton(
+                                      onPressed: () {},
+                                      style: const ButtonStyle(
+                                          shape: MaterialStatePropertyAll(
+                                              ContinuousRectangleBorder()),
+                                          backgroundColor:
+                                              MaterialStatePropertyAll(
+                                                  Color.fromARGB(
+                                                      255, 79, 29, 58))),
+                                      child: Text(
+                                        traducao.naoConheco,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700),
+                                      ),
+                                    ))
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(
-                      height: 32,
-                    ),
-                    const SizedBox(
-                        width: 300,
-                        child: Text(
-                          'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-                        )),
-                    const SizedBox(
-                      height: 32,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        SizedBox(
-                            width: 120,
-                            child: TextButton(
-                              onPressed: () {},
-                              style: const ButtonStyle(
-                                  shape: MaterialStatePropertyAll(
-                                      ContinuousRectangleBorder()),
-                                  backgroundColor: MaterialStatePropertyAll(
-                                      Color.fromARGB(255, 79, 29, 58))),
-                              child: Text(
-                                traducao.conheco,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700),
-                              ),
-                            )),
-                        SizedBox(
-                            width: 120,
-                            child: TextButton(
-                              onPressed: () {},
-                              style: const ButtonStyle(
-                                  shape: MaterialStatePropertyAll(
-                                      ContinuousRectangleBorder()),
-                                  backgroundColor: MaterialStatePropertyAll(
-                                      Color.fromARGB(255, 79, 29, 58))),
-                              child: Text(
-                                traducao.naoConheco,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700),
-                              ),
-                            ))
-                      ],
-                    )
-                  ],
-                ),
-              ),
-            ),
+                  );
+              }
+            },
           )
         ],
       ),
@@ -521,39 +595,158 @@ class Dashboard extends StatelessWidget {
   }
 }
 
-class Conhecidas extends StatelessWidget {
+class Conhecidas extends StatefulWidget {
   const Conhecidas({super.key});
 
+  @override
+  State<Conhecidas> createState() => _ConhecidasState();
+}
+
+class _ConhecidasState extends State<Conhecidas> {
   @override
   Widget build(BuildContext context) {
     return ScaffoldPadrao(
       temConfiguracoes: true,
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          Center(
-              child: Text(
-            traducao.palavrasConhecidas,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
-          )),
-          const SizedBox(
-            height: 16,
-          ),
-          ListTile(
-            tileColor: const Color.fromARGB(255, 255, 251, 183),
-            title: const Text(
-              'Palavra',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            subtitle: const Text(
-                'Lorem ipsum dolor sit amet consectetur adisciping elit...'),
-            trailing: IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.delete_outline,
+      body: FutureBuilder(
+        future: buscarConhecidas(lingua),
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              return const Center(
+                child:
+                    Text('Não foi possível ler os cadastros da base de dados.'),
+              );
+            case ConnectionState.waiting:
+              return const Center(child: CircularProgressIndicator());
+            case ConnectionState.active:
+              return const Center(child: CircularProgressIndicator());
+            case ConnectionState.done:
+              List<Widget> elementos = [
+                Center(
+                    child: Text(
+                  traducao.palavrasConhecidas,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 36),
                 )),
-          )
-        ],
+                const SizedBox(
+                  height: 16,
+                ),
+              ];
+
+              for (Map<String, Object?> conhecida in snapshot.data!) {
+                Palavra palavra = Palavra.fromMap(conhecida);
+
+                elementos.add(FutureBuilder(
+                  future: buscarLingua(),
+                  builder: (context, snapshotLingua) {
+                    switch (snapshotLingua.connectionState) {
+                      case ConnectionState.none:
+                        return const Center(
+                          child: Text(
+                              'Não foi possível ler os cadastros da base de dados.'),
+                        );
+                      case ConnectionState.waiting:
+                        return const Center(child: CircularProgressIndicator());
+                      case ConnectionState.active:
+                        return const Center(child: CircularProgressIndicator());
+                      case ConnectionState.done:
+                        return ListTile(
+                          onTap: () {
+                            showModalBottomSheet(
+                                context: context,
+                                builder: (context) {
+                                  return Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child: LayoutBuilder(
+                                        builder:
+                                          (context, constraints) => Container(
+                                            width: constraints.maxWidth * 0.9,
+                                                child: Column(
+                                                  children: [
+                                                    Text(
+                                                      {
+                                                        'portugues': palavra
+                                                            .grafiaPortugues,
+                                                        'ingles': palavra
+                                                            .grafiaIngles,
+                                                        'latim':
+                                                            palavra.grafiaLatim
+                                                      }[lingua]!,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 24,
+                                                      ),
+                                                    ),
+                                                    SizedBox(
+                                                      height: 16.0,
+                                                    ),
+                                                    Text(
+                                                      {
+                                                        'portugues': palavra
+                                                            .significadoPortugues,
+                                                        'ingles': palavra
+                                                            .significadoIngles,
+                                                        'latim': palavra
+                                                            .significadoLatim
+                                                      }[snapshotLingua
+                                                          .data!.first
+                                                          .cast()['lingua']]!,
+                                                      style: const TextStyle(
+                                                          fontSize: 20),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                        ),
+                                      );
+                                });
+                          },
+                          tileColor: const Color.fromARGB(255, 255, 251, 183),
+                          title: Text(
+                            {
+                              'portugues': palavra.grafiaPortugues,
+                              'ingles': palavra.grafiaIngles,
+                              'latim': palavra.grafiaLatim
+                            }[lingua]!,
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                overflow: TextOverflow.ellipsis),
+                            maxLines: 1,
+                          ),
+                          subtitle: Text(
+                            {
+                              'portugues': palavra.significadoPortugues,
+                              'ingles': palavra.significadoIngles,
+                              'latim': palavra.significadoLatim
+                            }[snapshotLingua.data!.first.cast()['lingua']]!,
+                            style: TextStyle(overflow: TextOverflow.ellipsis),
+                            maxLines: 1,
+                          ),
+                          trailing: IconButton(
+                              onPressed: () {
+                                excluirConhecida(palavra.idPalavra, lingua);
+                                setState(() {});
+                              },
+                              icon: const Icon(
+                                Icons.delete_outline,
+                              )),
+                        );
+                    }
+                  },
+                ));
+
+                elementos.add(
+                  const SizedBox(
+                    height: 16,
+                  ),
+                );
+              }
+
+              return ListView(
+                  padding: const EdgeInsets.all(16.0), children: elementos);
+          }
+        },
       ),
     );
   }
@@ -617,18 +810,15 @@ class Configuracoes extends StatelessWidget {
           ),
           ListTile(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HomePage())
-              );
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const HomePage()));
             },
             tileColor: const Color.fromARGB(255, 255, 251, 183),
             title: Text(
               traducao.alterarLingua,
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
-            subtitle: const Text(
-                'Atual: Português'),
+            subtitle: const Text('Atual: Português'),
           )
         ],
       ),
