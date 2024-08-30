@@ -14,6 +14,8 @@ class Traducao {
   String linguaAtual;
   String conheco;
   String naoConheco;
+  String vazioConhecidas;
+  String vazioRevisar;
 
   Traducao({
     required this.lingua,
@@ -31,6 +33,8 @@ class Traducao {
     required this.linguaAtual,
     required this.conheco,
     required this.naoConheco,
+    required this.vazioConhecidas,
+    required this.vazioRevisar
   });
 
   factory Traducao.fromMap(Map<String, dynamic> map) {
@@ -50,6 +54,8 @@ class Traducao {
       linguaAtual: map['linguaAtual'] ?? '',
       conheco: map['conheco'] ?? '',
       naoConheco: map['naoConheco'] ?? '',
+      vazioConhecidas: map['vazioConhecidas'] ?? '',
+      vazioRevisar: map['vazioRevisar'] ?? ''
     );
   }
 }

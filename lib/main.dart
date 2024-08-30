@@ -1,12 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
-import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:triolingo/database/dao/palavradao.dart';
@@ -15,12 +13,9 @@ import 'package:triolingo/database/dao/preferenciadao.dart';
 import 'package:triolingo/database/dao/traducaodao.dart';
 import 'package:triolingo/model/palavra.dart';
 import 'package:triolingo/model/traducao.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 late Traducao traducao;
 late String lingua;
-
-final random = Random();
 
 void main() async {
   if (Platform.isWindows || Platform.isLinux) {
@@ -382,7 +377,12 @@ class _DashboardState extends State<Dashboard> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const Conhecidas()));
+                          builder: (context) => const Conhecidas())).then(
+                    (value) {
+                      setState(() {});
+                    },
+                  );
+                  ;
                 },
                 child: Center(
                   child: Column(
@@ -393,34 +393,67 @@ class _DashboardState extends State<Dashboard> {
                         color: const Color.fromARGB(255, 102, 182, 171),
                         padding: const EdgeInsets.all(8),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(
-                              width: 80,
-                              height: 80,
-                              child: PieChart(PieChartData(sections: [
-                                PieChartSectionData(
-                                    value: 67,
-                                    radius: 25,
-                                    title: '67%',
-                                    titleStyle: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700),
-                                    color:
-                                        const Color.fromARGB(255, 79, 29, 58)),
-                                PieChartSectionData(
-                                    value: 33,
-                                    radius: 25,
-                                    titleStyle:
-                                        const TextStyle(color: Colors.white),
-                                    color: Colors.white)
-                              ])),
-                            ),
-                            const Text(
-                              'Conheço 34 palavras',
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 18),
-                              textAlign: TextAlign.center,
-                            ),
+                            FutureBuilder(
+                                future: contarConhecidas(lingua),
+                                builder: (context, snapshot) {
+                                  switch (snapshot.connectionState) {
+                                    case ConnectionState.none:
+                                      return const Center(
+                                        child: Text(
+                                            'Não foi possível ler os cadastros da base de dados.'),
+                                      );
+                                    case ConnectionState.waiting:
+                                      return const Center(
+                                          child: CircularProgressIndicator());
+                                    case ConnectionState.active:
+                                      return const Center(
+                                          child: CircularProgressIndicator());
+                                    case ConnectionState.done:
+                                      return Column(
+                                        children: [
+                                          SizedBox(
+                                              width: 80,
+                                              height: 80,
+                                              child: PieChart(
+                                                  PieChartData(sections: [
+                                                PieChartSectionData(
+                                                    value: (snapshot.data! *
+                                                        100 /
+                                                        66),
+                                                    radius: 25,
+                                                    title:
+                                                        '${snapshot.data! * 100 ~/ 66}%',
+                                                    titleStyle: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w700),
+                                                    color: const Color.fromARGB(
+                                                        255, 79, 29, 58)),
+                                                PieChartSectionData(
+                                                    value:
+                                                        ((66 - snapshot.data!) *
+                                                                100 /
+                                                                66)
+                                                            .ceilToDouble(),
+                                                    radius: 25,
+                                                    titleStyle: const TextStyle(
+                                                        fontSize: 0),
+                                                    color: Colors.white)
+                                              ]))),
+                                          Text(
+                                            traducao.conhecoPalavras.replaceAll(
+                                                'x', snapshot.data!.toString()),
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      );
+                                  }
+                                }),
                           ],
                         ),
                       ),
@@ -433,7 +466,11 @@ class _DashboardState extends State<Dashboard> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const ParaRevisar()));
+                          builder: (context) => const ParaRevisar())).then(
+                    (value) {
+                      setState(() {});
+                    },
+                  );
                 },
                 child: Center(
                   child: Column(
@@ -444,14 +481,33 @@ class _DashboardState extends State<Dashboard> {
                         color: const Color.fromARGB(255, 102, 182, 171),
                         padding: const EdgeInsets.all(4),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
-                              '10',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 55,
-                                  fontWeight: FontWeight.w700),
-                            ),
+                            FutureBuilder(
+                                future: contarDesconhecidas(lingua),
+                                builder: (context, snapshot) {
+                                  switch (snapshot.connectionState) {
+                                    case ConnectionState.none:
+                                      return const Center(
+                                        child: Text(
+                                            'Não foi possível ler os cadastros da base de dados.'),
+                                      );
+                                    case ConnectionState.waiting:
+                                      return const Center(
+                                          child: CircularProgressIndicator());
+                                    case ConnectionState.active:
+                                      return const Center(
+                                          child: CircularProgressIndicator());
+                                    case ConnectionState.done:
+                                      return Text(
+                                        snapshot.data!.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 55,
+                                            fontWeight: FontWeight.w700),
+                                      );
+                                  }
+                                }),
                             Text(
                               traducao.paraRevisar,
                               style: const TextStyle(
@@ -484,6 +540,23 @@ class _DashboardState extends State<Dashboard> {
                 case ConnectionState.active:
                   return const Center(child: CircularProgressIndicator());
                 case ConnectionState.done:
+                  if (!snapshot.hasData) {
+                    return Center(
+                        child: SizedBox(
+                      child: Icon(
+                        Icons.workspace_premium,
+                        size: 100,
+                        shadows: [
+                          Shadow(
+                              color: Color.fromARGB(128, 168, 168, 168),
+                              blurRadius: 8,
+                              offset: Offset(4, 4))
+                        ],
+                        color: Color.fromARGB(255, 79, 29, 58),
+                      ),
+                    ));
+                  }
+
                   Palavra palavra = Palavra.fromMap(snapshot.data!.cast());
                   return Container(
                     decoration: BoxDecoration(boxShadow: [
@@ -516,17 +589,36 @@ class _DashboardState extends State<Dashboard> {
                             SizedBox(
                                 width: 300,
                                 child: FutureBuilder(
-                                  future: buscarLingua(),
-                                  builder: (context, snapshot) => Text(
-                                    {
-                                      'portugues': palavra.significadoPortugues,
-                                      'ingles': palavra.significadoIngles,
-                                      'latim': palavra.significadoLatim
-                                    }[snapshot.data!.first.values.first
-                                        .toString()]!,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                )),
+                                    future: buscarLingua(),
+                                    builder: (context, snapshot) {
+                                      switch (snapshot.connectionState) {
+                                        case ConnectionState.none:
+                                          return const Center(
+                                            child: Text(
+                                                'Não foi possível ler os cadastros da base de dados.'),
+                                          );
+                                        case ConnectionState.waiting:
+                                          return const Center(
+                                              child:
+                                                  CircularProgressIndicator());
+                                        case ConnectionState.active:
+                                          return const Center(
+                                              child:
+                                                  CircularProgressIndicator());
+                                        case ConnectionState.done:
+                                          return Text(
+                                            {
+                                              'portugues':
+                                                  palavra.significadoPortugues,
+                                              'ingles':
+                                                  palavra.significadoIngles,
+                                              'latim': palavra.significadoLatim
+                                            }[snapshot.data!.first.values.first
+                                                .toString()]!,
+                                            textAlign: TextAlign.center,
+                                          );
+                                      }
+                                    })),
                             const SizedBox(
                               height: 32,
                             ),
@@ -564,7 +656,17 @@ class _DashboardState extends State<Dashboard> {
                                 SizedBox(
                                     width: 120,
                                     child: TextButton(
-                                      onPressed: () {},
+                                      onPressed: () async {
+                                        cadastrarDesconhecida(
+                                            palavra.idPalavra,
+                                            (await buscarLingua())
+                                                .first
+                                                .values
+                                                .first
+                                                .toString(),
+                                            lingua);
+                                        setState(() {});
+                                      },
                                       style: const ButtonStyle(
                                           shape: MaterialStatePropertyAll(
                                               ContinuousRectangleBorder()),
@@ -608,9 +710,9 @@ class _ConhecidasState extends State<Conhecidas> {
     return ScaffoldPadrao(
       temConfiguracoes: true,
       body: FutureBuilder(
-        future: buscarConhecidas(lingua),
-        builder: (context, snapshot) {
-          switch (snapshot.connectionState) {
+        future: buscarLingua(),
+        builder: (context, snapshotLingua) {
+          switch (snapshotLingua.connectionState) {
             case ConnectionState.none:
               return const Center(
                 child:
@@ -621,25 +723,197 @@ class _ConhecidasState extends State<Conhecidas> {
             case ConnectionState.active:
               return const Center(child: CircularProgressIndicator());
             case ConnectionState.done:
-              List<Widget> elementos = [
-                Center(
-                    child: Text(
-                  traducao.palavrasConhecidas,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 36),
-                )),
-                const SizedBox(
-                  height: 16,
-                ),
-              ];
+              return FutureBuilder(
+                future: buscarConhecidas(lingua),
+                builder: (context, snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.none:
+                      return const Center(
+                        child: Text(
+                            'Não foi possível ler os cadastros da base de dados.'),
+                      );
+                    case ConnectionState.waiting:
+                      return const Center(child: CircularProgressIndicator());
+                    case ConnectionState.active:
+                      return const Center(child: CircularProgressIndicator());
+                    case ConnectionState.done:
+                      List<Widget> elementos = [
+                        Center(
+                            child: Text(
+                          traducao.palavrasConhecidas,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 36),
+                        )),
+                        const SizedBox(
+                          height: 16,
+                        ),
+                      ];
 
-              for (Map<String, Object?> conhecida in snapshot.data!) {
-                Palavra palavra = Palavra.fromMap(conhecida);
+                      if (snapshot.data!.isEmpty) {
+                        elementos.add(const Center(
+                            child: Text('Não há nenhuma palavra conhecida')));
+                      }
 
-                elementos.add(FutureBuilder(
-                  future: buscarLingua(),
-                  builder: (context, snapshotLingua) {
-                    switch (snapshotLingua.connectionState) {
+                      for (Map<String, Object?> conhecida in snapshot.data!) {
+                        Palavra palavra = Palavra.fromMap(conhecida);
+
+                        elementos.add(ClipRRect(
+                          clipBehavior: Clip.hardEdge,
+                          child: Dismissible(
+                            key: UniqueKey(),
+                            onDismissed: (direction) {
+                              excluirConhecida(palavra.idPalavra, lingua);
+                              setState(() {});
+                            },
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return Stack(
+                                  children: [
+                                    Container(
+                                      color: Color.fromARGB(255, 255, 251, 183),
+                                      width: double.infinity,
+                                      height: 75,
+                                    ),
+                                    ListTile(
+                                      onTap: () {
+                                        showModalBottomSheet(
+                                            context: context,
+                                            builder: (context) {
+                                              return Padding(
+                                                padding:
+                                                    const EdgeInsets.all(16.0),
+                                                child: LayoutBuilder(
+                                                  builder:
+                                                      (context, constraintsModal) =>
+                                                          SizedBox(
+                                                    width:
+                                                        constraintsModal.maxWidth *
+                                                            0.9,
+                                                    child: Column(
+                                                      children: [
+                                                        Text(
+                                                          {
+                                                            'portugues': palavra
+                                                                .grafiaPortugues,
+                                                            'ingles': palavra
+                                                                .grafiaIngles,
+                                                            'latim': palavra
+                                                                .grafiaLatim
+                                                          }[lingua]!,
+                                                          style:
+                                                              const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 24,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 16.0,
+                                                        ),
+                                                        Text(
+                                                          {
+                                                            'portugues': palavra
+                                                                .significadoPortugues,
+                                                            'ingles': palavra
+                                                                .significadoIngles,
+                                                            'latim': palavra
+                                                                .significadoLatim
+                                                          }[snapshotLingua
+                                                                  .data!.first
+                                                                  .cast()[
+                                                              'lingua']]!,
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize: 20),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            });
+                                      },
+                                      title: Text(
+                                        {
+                                          'portugues': palavra.grafiaPortugues,
+                                          'ingles': palavra.grafiaIngles,
+                                          'latim': palavra.grafiaLatim
+                                        }[lingua]!,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            overflow: TextOverflow.ellipsis),
+                                        maxLines: 1,
+                                      ),
+                                      subtitle: Text(
+                                        {
+                                          'portugues':
+                                              palavra.significadoPortugues,
+                                          'ingles': palavra.significadoIngles,
+                                          'latim': palavra.significadoLatim
+                                        }[snapshotLingua.data!.first
+                                            .cast()['lingua']]!,
+                                        style: const TextStyle(
+                                            overflow: TextOverflow.ellipsis),
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ));
+
+                        elementos.add(
+                          const SizedBox(
+                            height: 16,
+                          ),
+                        );
+                      }
+
+                      return ListView(
+                          padding: const EdgeInsets.all(16.0),
+                          children: elementos);
+                  }
+                },
+              );
+          }
+        },
+      ),
+    );
+  }
+}
+
+class ParaRevisar extends StatefulWidget {
+  const ParaRevisar({super.key});
+
+  @override
+  State<ParaRevisar> createState() => _ParaRevisarState();
+}
+
+class _ParaRevisarState extends State<ParaRevisar> {
+  @override
+  Widget build(BuildContext context) {
+    return ScaffoldPadrao(
+        temConfiguracoes: true,
+        body: FutureBuilder(
+          future: buscarLingua(),
+          builder: (context, snapshotLingua) {
+            switch (snapshotLingua.connectionState) {
+              case ConnectionState.none:
+                return const Center(
+                  child: Text(
+                      'Não foi possível ler os cadastros da base de dados.'),
+                );
+              case ConnectionState.waiting:
+                return const Center(child: CircularProgressIndicator());
+              case ConnectionState.active:
+                return const Center(child: CircularProgressIndicator());
+              case ConnectionState.done:
+                return FutureBuilder(
+                  future: buscarDesconhecidas(lingua),
+                  builder: (context, snapshot) {
+                    switch (snapshot.connectionState) {
                       case ConnectionState.none:
                         return const Center(
                           child: Text(
@@ -650,143 +924,125 @@ class _ConhecidasState extends State<Conhecidas> {
                       case ConnectionState.active:
                         return const Center(child: CircularProgressIndicator());
                       case ConnectionState.done:
-                        return ListTile(
-                          onTap: () {
-                            showModalBottomSheet(
-                                context: context,
-                                builder: (context) {
-                                  return Padding(
-                                      padding: EdgeInsets.all(16.0),
+                        List<Widget> elementos = [
+                          Center(
+                              child: Text(
+                            traducao.paraRevisar,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 36),
+                          )),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                        ];
+
+                        if (snapshot.data!.isEmpty) {
+                          elementos.add(const Center(
+                              child:
+                                  Text('Não há nenhuma palavra para revisar')));
+                        }
+
+                        for (Map<String, Object?> desconhecida
+                            in snapshot.data!) {
+                          Palavra palavra = Palavra.fromMap(desconhecida);
+
+                          elementos.add(ListTile(
+                            onTap: () {
+                              showModalBottomSheet(
+                                  context: context,
+                                  builder: (context) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(16.0),
                                       child: LayoutBuilder(
-                                        builder:
-                                          (context, constraints) => Container(
-                                            width: constraints.maxWidth * 0.9,
-                                                child: Column(
-                                                  children: [
-                                                    Text(
-                                                      {
-                                                        'portugues': palavra
-                                                            .grafiaPortugues,
-                                                        'ingles': palavra
-                                                            .grafiaIngles,
-                                                        'latim':
-                                                            palavra.grafiaLatim
-                                                      }[lingua]!,
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        fontSize: 24,
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      height: 16.0,
-                                                    ),
-                                                    Text(
-                                                      {
-                                                        'portugues': palavra
-                                                            .significadoPortugues,
-                                                        'ingles': palavra
-                                                            .significadoIngles,
-                                                        'latim': palavra
-                                                            .significadoLatim
-                                                      }[snapshotLingua
-                                                          .data!.first
-                                                          .cast()['lingua']]!,
-                                                      style: const TextStyle(
-                                                          fontSize: 20),
-                                                    ),
-                                                  ],
+                                        builder: (context, constraints) =>
+                                            SizedBox(
+                                          width: constraints.maxWidth * 0.9,
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                {
+                                                  'portugues':
+                                                      palavra.grafiaPortugues,
+                                                  'ingles':
+                                                      palavra.grafiaIngles,
+                                                  'latim': palavra.grafiaLatim
+                                                }[lingua]!,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 24,
                                                 ),
                                               ),
+                                              const SizedBox(
+                                                height: 16.0,
+                                              ),
+                                              Text(
+                                                {
+                                                  'portugues': palavra
+                                                      .significadoPortugues,
+                                                  'ingles':
+                                                      palavra.significadoIngles,
+                                                  'latim':
+                                                      palavra.significadoLatim
+                                                }[snapshotLingua.data!.first
+                                                    .cast()['lingua']]!,
+                                                style: const TextStyle(
+                                                    fontSize: 20),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      );
-                                });
-                          },
-                          tileColor: const Color.fromARGB(255, 255, 251, 183),
-                          title: Text(
-                            {
-                              'portugues': palavra.grafiaPortugues,
-                              'ingles': palavra.grafiaIngles,
-                              'latim': palavra.grafiaLatim
-                            }[lingua]!,
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                overflow: TextOverflow.ellipsis),
-                            maxLines: 1,
-                          ),
-                          subtitle: Text(
-                            {
-                              'portugues': palavra.significadoPortugues,
-                              'ingles': palavra.significadoIngles,
-                              'latim': palavra.significadoLatim
-                            }[snapshotLingua.data!.first.cast()['lingua']]!,
-                            style: TextStyle(overflow: TextOverflow.ellipsis),
-                            maxLines: 1,
-                          ),
-                          trailing: IconButton(
-                              onPressed: () {
-                                excluirConhecida(palavra.idPalavra, lingua);
-                                setState(() {});
-                              },
-                              icon: const Icon(
-                                Icons.delete_outline,
-                              )),
-                        );
+                                      ),
+                                    );
+                                  });
+                            },
+                            tileColor: const Color.fromARGB(255, 255, 251, 183),
+                            title: Text(
+                              {
+                                'portugues': palavra.grafiaPortugues,
+                                'ingles': palavra.grafiaIngles,
+                                'latim': palavra.grafiaLatim
+                              }[lingua]!,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  overflow: TextOverflow.ellipsis),
+                              maxLines: 1,
+                            ),
+                            subtitle: Text(
+                              {
+                                'portugues': palavra.significadoPortugues,
+                                'ingles': palavra.significadoIngles,
+                                'latim': palavra.significadoLatim
+                              }[snapshotLingua.data!.first.cast()['lingua']]!,
+                              style: const TextStyle(
+                                  overflow: TextOverflow.ellipsis),
+                              maxLines: 1,
+                            ),
+                            trailing: IconButton(
+                                onPressed: () {
+                                  checarDesconhecida(palavra.idPalavra, lingua);
+                                  setState(() {});
+                                },
+                                icon: const Icon(
+                                  Icons.check,
+                                )),
+                          ));
+
+                          elementos.add(
+                            const SizedBox(
+                              height: 16,
+                            ),
+                          );
+                        }
+
+                        return ListView(
+                            padding: const EdgeInsets.all(16.0),
+                            children: elementos);
                     }
                   },
-                ));
-
-                elementos.add(
-                  const SizedBox(
-                    height: 16,
-                  ),
                 );
-              }
-
-              return ListView(
-                  padding: const EdgeInsets.all(16.0), children: elementos);
-          }
-        },
-      ),
-    );
-  }
-}
-
-class ParaRevisar extends StatelessWidget {
-  const ParaRevisar({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaffoldPadrao(
-      temConfiguracoes: true,
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          Center(
-              child: Text(
-            traducao.paraRevisar,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
-          )),
-          const SizedBox(
-            height: 16,
-          ),
-          ListTile(
-            tileColor: const Color.fromARGB(255, 255, 251, 183),
-            title: const Text(
-              'Palavra',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            subtitle: const Text(
-                'Lorem ipsum dolor sit amet consectetur adisciping elit...'),
-            trailing: IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.check,
-                )),
-          )
-        ],
-      ),
-    );
+            }
+          },
+        ));
   }
 }
 
@@ -796,32 +1052,54 @@ class Configuracoes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScaffoldPadrao(
-      temConfiguracoes: false,
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          Center(
-              child: Text(
-            traducao.configuracoes,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 36),
-          )),
-          const SizedBox(
-            height: 16,
-          ),
-          ListTile(
-            onTap: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const HomePage()));
-            },
-            tileColor: const Color.fromARGB(255, 255, 251, 183),
-            title: Text(
-              traducao.alterarLingua,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            subtitle: const Text('Atual: Português'),
-          )
-        ],
-      ),
-    );
+        temConfiguracoes: false,
+        body: FutureBuilder(
+            future: buscarLingua(),
+            builder: (context, snapshot) {
+              switch (snapshot.connectionState) {
+                case ConnectionState.none:
+                  return const Center(
+                    child: Text(
+                        'Não foi possível ler os cadastros da base de dados.'),
+                  );
+                case ConnectionState.waiting:
+                  return const Center(child: CircularProgressIndicator());
+                case ConnectionState.active:
+                  return const Center(child: CircularProgressIndicator());
+                case ConnectionState.done:
+                  return ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      Center(
+                          child: Text(
+                        traducao.configuracoes,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 36),
+                      )),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      ListTile(
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const HomePage()));
+                        },
+                        tileColor: const Color.fromARGB(255, 255, 251, 183),
+                        title: Text(
+                          traducao.alterarLingua,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text('${traducao.linguaAtual}: ${{
+                          'portugues': traducao.portugues,
+                          'ingles': traducao.ingles,
+                          'latim': traducao.latim
+                        }[snapshot.data!.first.cast()['lingua']]}.'),
+                      )
+                    ],
+                  );
+              }
+            }));
   }
 }
