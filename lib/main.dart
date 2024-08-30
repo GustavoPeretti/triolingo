@@ -3,7 +3,6 @@
 import 'dart:io';
 
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -584,7 +583,7 @@ class _DashboardState extends State<Dashboard> {
                   return const Center(child: CircularProgressIndicator());
                 case ConnectionState.done:
                   if (!snapshot.hasData) {
-                    return Center(
+                    return const Center(
                         child: SizedBox(
                       child: Icon(
                         Icons.workspace_premium,
@@ -748,8 +747,8 @@ class Conhecidas extends StatefulWidget {
 }
 
 class _ConhecidasState extends State<Conhecidas> {
-  PageStorageKey _key = PageStorageKey('conhecidas');
-  PageController _controller = PageController();
+  final PageStorageKey _key = const PageStorageKey('conhecidas');
+  final PageController _controller = PageController();
 
   @override
   Widget build(BuildContext context) {
@@ -823,7 +822,7 @@ class _ConhecidasState extends State<Conhecidas> {
                                     return Stack(
                                       children: [
                                         Container(
-                                          color: Color.fromARGB(
+                                          color: const Color.fromARGB(
                                               255, 255, 251, 183),
                                           width: double.infinity,
                                           height: 75,
@@ -945,8 +944,8 @@ class ParaRevisar extends StatefulWidget {
 }
 
 class _ParaRevisarState extends State<ParaRevisar> {
-  PageStorageKey _key = PageStorageKey('pararevisar');
-  PageController _controller = PageController();
+  final PageStorageKey _key = const PageStorageKey('pararevisar');
+  final PageController _controller = PageController();
 
   @override
   Widget build(BuildContext context) {
