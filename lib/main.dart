@@ -424,7 +424,6 @@ class _DashboardState extends State<Dashboard> {
                       setState(() {});
                     },
                   );
-                  ;
                 },
                 child: Center(
                   child: Column(
