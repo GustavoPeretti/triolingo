@@ -13,6 +13,7 @@ import 'package:triolingo/database/dao/preferenciadao.dart';
 import 'package:triolingo/database/dao/traducaodao.dart';
 import 'package:triolingo/model/palavra.dart';
 import 'package:triolingo/model/traducao.dart';
+import 'package:video_player/video_player.dart';
 
 late Traducao traducao;
 late String lingua;
@@ -214,8 +215,34 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class Preferencia extends StatelessWidget {
+class Preferencia extends StatefulWidget {
   const Preferencia({super.key});
+
+  @override
+  State<Preferencia> createState() => _PreferenciaState();
+}
+
+class _PreferenciaState extends State<Preferencia> {
+  late VideoPlayerController _controller;
+  late Future _initializeVideoPlayerFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = VideoPlayerController.asset('assets/img/fuinha.mp4');
+
+    _initializeVideoPlayerFuture = _controller.initialize();
+
+    _controller.setLooping(true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,9 +252,25 @@ class Preferencia extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/img/gatito.gif',
+            SizedBox(
               height: 250,
+              child: FutureBuilder(
+                future: _initializeVideoPlayerFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    _controller.play();
+              
+                    return AspectRatio(
+                      aspectRatio: _controller.value.aspectRatio,
+                      child: VideoPlayer(_controller),
+                    );
+                  } else {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                },
+              ),
             ),
             Text(
               traducao.desejoAprimorar,
@@ -705,6 +748,9 @@ class Conhecidas extends StatefulWidget {
 }
 
 class _ConhecidasState extends State<Conhecidas> {
+  PageStorageKey _key = PageStorageKey('conhecidas');
+  PageController _controller = PageController();
+
   @override
   Widget build(BuildContext context) {
     return ScaffoldPadrao(
@@ -737,143 +783,150 @@ class _ConhecidasState extends State<Conhecidas> {
                     case ConnectionState.active:
                       return const Center(child: CircularProgressIndicator());
                     case ConnectionState.done:
-                      List<Widget> elementos = [
-                        Center(
-                            child: Text(
-                          traducao.palavrasConhecidas,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 36),
-                        )),
-                        const SizedBox(
-                          height: 16,
-                        ),
-                      ];
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16.0),
+                        key: _key,
+                        controller: _controller,
+                        itemCount: snapshot.data!.isEmpty
+                            ? 2
+                            : snapshot.data!.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return Center(
+                                child: Text(
+                              traducao.palavrasConhecidas,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700, fontSize: 36),
+                            ));
+                          }
 
-                      if (snapshot.data!.isEmpty) {
-                        elementos.add(const Center(
-                            child: Text('Não há nenhuma palavra conhecida')));
-                      }
+                          if (snapshot.data!.isEmpty) {
+                            return Center(
+                                child: Text(traducao.vazioConhecidas));
+                          }
 
-                      for (Map<String, Object?> conhecida in snapshot.data!) {
-                        Palavra palavra = Palavra.fromMap(conhecida);
+                          Palavra palavra = Palavra.fromMap(
+                              snapshot.data!.elementAt(index - 1));
 
-                        elementos.add(ClipRRect(
-                          clipBehavior: Clip.hardEdge,
-                          child: Dismissible(
-                            key: UniqueKey(),
-                            onDismissed: (direction) {
-                              excluirConhecida(palavra.idPalavra, lingua);
-                              setState(() {});
-                            },
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Stack(
-                                  children: [
-                                    Container(
-                                      color: Color.fromARGB(255, 255, 251, 183),
-                                      width: double.infinity,
-                                      height: 75,
-                                    ),
-                                    ListTile(
-                                      onTap: () {
-                                        showModalBottomSheet(
-                                            context: context,
-                                            builder: (context) {
-                                              return Padding(
-                                                padding:
-                                                    const EdgeInsets.all(16.0),
-                                                child: LayoutBuilder(
-                                                  builder:
-                                                      (context, constraintsModal) =>
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: ClipRRect(
+                              clipBehavior: Clip.hardEdge,
+                              child: Dismissible(
+                                key: UniqueKey(),
+                                onDismissed: (direction) {
+                                  excluirConhecida(palavra.idPalavra, lingua);
+                                  setState(() {});
+                                },
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return Stack(
+                                      children: [
+                                        Container(
+                                          color: Color.fromARGB(
+                                              255, 255, 251, 183),
+                                          width: double.infinity,
+                                          height: 75,
+                                        ),
+                                        ListTile(
+                                          onTap: () {
+                                            showModalBottomSheet(
+                                                context: context,
+                                                builder: (context) {
+                                                  return Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            16.0),
+                                                    child: LayoutBuilder(
+                                                      builder: (context,
+                                                              constraintsModal) =>
                                                           SizedBox(
-                                                    width:
-                                                        constraintsModal.maxWidth *
+                                                        width: constraintsModal
+                                                                .maxWidth *
                                                             0.9,
-                                                    child: Column(
-                                                      children: [
-                                                        Text(
-                                                          {
-                                                            'portugues': palavra
-                                                                .grafiaPortugues,
-                                                            'ingles': palavra
-                                                                .grafiaIngles,
-                                                            'latim': palavra
-                                                                .grafiaLatim
-                                                          }[lingua]!,
-                                                          style:
-                                                              const TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            fontSize: 24,
-                                                          ),
+                                                        child: Column(
+                                                          children: [
+                                                            Text(
+                                                              {
+                                                                'portugues': palavra
+                                                                    .grafiaPortugues,
+                                                                'ingles': palavra
+                                                                    .grafiaIngles,
+                                                                'latim': palavra
+                                                                    .grafiaLatim
+                                                              }[lingua]!,
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                fontSize: 24,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 16.0,
+                                                            ),
+                                                            Text(
+                                                              {
+                                                                'portugues': palavra
+                                                                    .significadoPortugues,
+                                                                'ingles': palavra
+                                                                    .significadoIngles,
+                                                                'latim': palavra
+                                                                    .significadoLatim
+                                                              }[snapshotLingua
+                                                                      .data!.first
+                                                                      .cast()[
+                                                                  'lingua']]!,
+                                                              style:
+                                                                  const TextStyle(
+                                                                      fontSize:
+                                                                          20),
+                                                            ),
+                                                          ],
                                                         ),
-                                                        const SizedBox(
-                                                          height: 16.0,
-                                                        ),
-                                                        Text(
-                                                          {
-                                                            'portugues': palavra
-                                                                .significadoPortugues,
-                                                            'ingles': palavra
-                                                                .significadoIngles,
-                                                            'latim': palavra
-                                                                .significadoLatim
-                                                          }[snapshotLingua
-                                                                  .data!.first
-                                                                  .cast()[
-                                                              'lingua']]!,
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontSize: 20),
-                                                        ),
-                                                      ],
+                                                      ),
                                                     ),
-                                                  ),
-                                                ),
-                                              );
-                                            });
-                                      },
-                                      title: Text(
-                                        {
-                                          'portugues': palavra.grafiaPortugues,
-                                          'ingles': palavra.grafiaIngles,
-                                          'latim': palavra.grafiaLatim
-                                        }[lingua]!,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            overflow: TextOverflow.ellipsis),
-                                        maxLines: 1,
-                                      ),
-                                      subtitle: Text(
-                                        {
-                                          'portugues':
-                                              palavra.significadoPortugues,
-                                          'ingles': palavra.significadoIngles,
-                                          'latim': palavra.significadoLatim
-                                        }[snapshotLingua.data!.first
-                                            .cast()['lingua']]!,
-                                        style: const TextStyle(
-                                            overflow: TextOverflow.ellipsis),
-                                        maxLines: 1,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
+                                                  );
+                                                });
+                                          },
+                                          title: Text(
+                                            {
+                                              'portugues':
+                                                  palavra.grafiaPortugues,
+                                              'ingles': palavra.grafiaIngles,
+                                              'latim': palavra.grafiaLatim
+                                            }[lingua]!,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                overflow:
+                                                    TextOverflow.ellipsis),
+                                            maxLines: 1,
+                                          ),
+                                          subtitle: Text(
+                                            {
+                                              'portugues':
+                                                  palavra.significadoPortugues,
+                                              'ingles':
+                                                  palavra.significadoIngles,
+                                              'latim': palavra.significadoLatim
+                                            }[snapshotLingua.data!.first
+                                                .cast()['lingua']]!,
+                                            style: const TextStyle(
+                                                overflow:
+                                                    TextOverflow.ellipsis),
+                                            maxLines: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
-                          ),
-                        ));
-
-                        elementos.add(
-                          const SizedBox(
-                            height: 16,
-                          ),
-                        );
-                      }
-
-                      return ListView(
-                          padding: const EdgeInsets.all(16.0),
-                          children: elementos);
+                          );
+                        },
+                      );
                   }
                 },
               );
@@ -892,6 +945,9 @@ class ParaRevisar extends StatefulWidget {
 }
 
 class _ParaRevisarState extends State<ParaRevisar> {
+  PageStorageKey _key = PageStorageKey('pararevisar');
+  PageController _controller = PageController();
+
   @override
   Widget build(BuildContext context) {
     return ScaffoldPadrao(
@@ -924,119 +980,124 @@ class _ParaRevisarState extends State<ParaRevisar> {
                       case ConnectionState.active:
                         return const Center(child: CircularProgressIndicator());
                       case ConnectionState.done:
-                        List<Widget> elementos = [
-                          Center(
-                              child: Text(
-                            traducao.paraRevisar,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700, fontSize: 36),
-                          )),
-                          const SizedBox(
-                            height: 16,
-                          ),
-                        ];
+                        return ListView.builder(
+                            padding: const EdgeInsets.all(16.0),
+                            key: _key,
+                            controller: _controller,
+                            itemCount: snapshot.data!.isEmpty
+                                ? 2
+                                : snapshot.data!.length + 1,
+                            itemBuilder: (context, index) {
+                              if (index == 0) {
+                                return Center(
+                                    child: Text(
+                                  traducao.paraRevisar,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 36),
+                                ));
+                              }
 
-                        if (snapshot.data!.isEmpty) {
-                          elementos.add(const Center(
-                              child:
-                                  Text('Não há nenhuma palavra para revisar')));
-                        }
+                              if (snapshot.data!.isEmpty) {
+                                return Center(
+                                    child: Text(traducao.vazioRevisar));
+                              }
 
-                        for (Map<String, Object?> desconhecida
-                            in snapshot.data!) {
-                          Palavra palavra = Palavra.fromMap(desconhecida);
+                              Palavra palavra = Palavra.fromMap(
+                                  snapshot.data!.elementAt(index - 1));
 
-                          elementos.add(ListTile(
-                            onTap: () {
-                              showModalBottomSheet(
-                                  context: context,
-                                  builder: (context) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: LayoutBuilder(
-                                        builder: (context, constraints) =>
-                                            SizedBox(
-                                          width: constraints.maxWidth * 0.9,
-                                          child: Column(
-                                            children: [
-                                              Text(
-                                                {
-                                                  'portugues':
-                                                      palavra.grafiaPortugues,
-                                                  'ingles':
-                                                      palavra.grafiaIngles,
-                                                  'latim': palavra.grafiaLatim
-                                                }[lingua]!,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize: 24,
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: ListTile(
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                        context: context,
+                                        builder: (context) {
+                                          return Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: LayoutBuilder(
+                                              builder: (context, constraints) =>
+                                                  SizedBox(
+                                                width:
+                                                    constraints.maxWidth * 0.9,
+                                                child: Column(
+                                                  children: [
+                                                    Text(
+                                                      {
+                                                        'portugues': palavra
+                                                            .grafiaPortugues,
+                                                        'ingles': palavra
+                                                            .grafiaIngles,
+                                                        'latim':
+                                                            palavra.grafiaLatim
+                                                      }[lingua]!,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 24,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(
+                                                      height: 16.0,
+                                                    ),
+                                                    Text(
+                                                      {
+                                                        'portugues': palavra
+                                                            .significadoPortugues,
+                                                        'ingles': palavra
+                                                            .significadoIngles,
+                                                        'latim': palavra
+                                                            .significadoLatim
+                                                      }[snapshotLingua
+                                                          .data!.first
+                                                          .cast()['lingua']]!,
+                                                      style: const TextStyle(
+                                                          fontSize: 20),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                              const SizedBox(
-                                                height: 16.0,
-                                              ),
-                                              Text(
-                                                {
-                                                  'portugues': palavra
-                                                      .significadoPortugues,
-                                                  'ingles':
-                                                      palavra.significadoIngles,
-                                                  'latim':
-                                                      palavra.significadoLatim
-                                                }[snapshotLingua.data!.first
-                                                    .cast()['lingua']]!,
-                                                style: const TextStyle(
-                                                    fontSize: 20),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  });
-                            },
-                            tileColor: const Color.fromARGB(255, 255, 251, 183),
-                            title: Text(
-                              {
-                                'portugues': palavra.grafiaPortugues,
-                                'ingles': palavra.grafiaIngles,
-                                'latim': palavra.grafiaLatim
-                              }[lingua]!,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  overflow: TextOverflow.ellipsis),
-                              maxLines: 1,
-                            ),
-                            subtitle: Text(
-                              {
-                                'portugues': palavra.significadoPortugues,
-                                'ingles': palavra.significadoIngles,
-                                'latim': palavra.significadoLatim
-                              }[snapshotLingua.data!.first.cast()['lingua']]!,
-                              style: const TextStyle(
-                                  overflow: TextOverflow.ellipsis),
-                              maxLines: 1,
-                            ),
-                            trailing: IconButton(
-                                onPressed: () {
-                                  checarDesconhecida(palavra.idPalavra, lingua);
-                                  setState(() {});
-                                },
-                                icon: const Icon(
-                                  Icons.check,
-                                )),
-                          ));
-
-                          elementos.add(
-                            const SizedBox(
-                              height: 16,
-                            ),
-                          );
-                        }
-
-                        return ListView(
-                            padding: const EdgeInsets.all(16.0),
-                            children: elementos);
+                                            ),
+                                          );
+                                        });
+                                  },
+                                  tileColor:
+                                      const Color.fromARGB(255, 255, 251, 183),
+                                  title: Text(
+                                    {
+                                      'portugues': palavra.grafiaPortugues,
+                                      'ingles': palavra.grafiaIngles,
+                                      'latim': palavra.grafiaLatim
+                                    }[lingua]!,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        overflow: TextOverflow.ellipsis),
+                                    maxLines: 1,
+                                  ),
+                                  subtitle: Text(
+                                    {
+                                      'portugues': palavra.significadoPortugues,
+                                      'ingles': palavra.significadoIngles,
+                                      'latim': palavra.significadoLatim
+                                    }[snapshotLingua.data!.first
+                                        .cast()['lingua']]!,
+                                    style: const TextStyle(
+                                        overflow: TextOverflow.ellipsis),
+                                    maxLines: 1,
+                                  ),
+                                  trailing: IconButton(
+                                      onPressed: () {
+                                        checarDesconhecida(
+                                            palavra.idPalavra, lingua);
+                                        setState(() {});
+                                      },
+                                      icon: const Icon(
+                                        Icons.check,
+                                      )),
+                                ),
+                              );
+                            });
                     }
                   },
                 );
